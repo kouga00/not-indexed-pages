@@ -41,8 +41,52 @@ Array.from(new Set(rows.map(x => x.page)))
 
 const parseString = string => string.replace(/\/$/, '').split('/').pop();
 
-const compareRowsToSitemap = (sitemap, stats) => {
+const getNotIndexedPages = (sitemap, stats) => {
     return sitemap.filter(url => ! stats.filter(stat => parseString(stat.page).includes(parseString(url))).length)
+}
+
+const getIndexedPages = (sitemap, stats) => {    
+    return stats.filter(stat => {
+        return sitemap.filter(url => parseString(stat.page).includes(parseString(url))).length;
+    })
+}
+
+const getNotPerformedPages = (stats, media) => {
+    return stats.filter(stat => Math.round(stat.hits.reduce((a, b) => a + b.views, 0)) <= media)
+}
+
+const getBestPages = (stats, media) => {
+    return stats.filter(stat => Math.round(stat.hits.reduce((a, b) => a + b.views, 0)) >= media)
+}
+
+const transformPages = (stat, totalViews) => {
+    const views = stat.hits.reduce((a, b) => a + b.views, 0);
+    return {
+        page: stat.page,
+        views: views,
+        // index: (views / totalViews) * 100
+    }
+}
+
+// const compareRowsToSitemap = (sitemap, stats) => {
+//     const totalViews = stats.map(stat => stat.hits.reduce((a, b) => a + b.views, 0)).reduce((a, b) => a + b, 0);
+//     return {
+//         not_indexed: sitemap.filter(url => ! stats.filter(stat => parseString(stat.page).includes(parseString(url))).length),
+//         not_performed: sitemap.filter(url => stats.filter(stat => {
+//             return parseString(stat.page).includes(parseString(url)) && stat.hits.reduce((a, b) => a + b.views, 0) <= process.env.MIN_VIEWS
+//         }).length)
+//     }
+// }
+
+const compareRowsToSitemap = (sitemap, stats) => {
+    const totalViews = stats.map(stat => stat.hits.reduce((a, b) => a + b.views, 0)).reduce((a, b) => a + b, 0);
+    const media = Math.round(totalViews / stats.length);
+    const statsInSitemap = getIndexedPages(sitemap, stats);
+    return {
+        not_indexed: getNotIndexedPages(sitemap, stats),
+        not_performed: getNotPerformedPages(statsInSitemap, media).map(x => transformPages(x, totalViews)),
+        best: getBestPages(statsInSitemap, media).map(x => transformPages(x, totalViews))
+    }
 }
 
 const RxGaApi = Rx.Observable.bindNodeCallback(gaApi);
@@ -73,6 +117,5 @@ const RxGaApi = Rx.Observable.bindNodeCallback(gaApi);
 // // GET NOT INDEXED PAGES
 Rx.Observable.bindNodeCallback(jsonfile.readFile)('./data/sitemap.json')
 .flatMap(sitemap => Rx.Observable.bindNodeCallback(jsonfile.readFile)('./data/analytics.json'), (sitemap, stats) => compareRowsToSitemap(sitemap, stats))
-.toArray()
-.flatMap(res => Rx.Observable.bindNodeCallback(jsonfile.writeFile)('./data/not_indexed.json', res, {spaces: 2}))
+.flatMap(res => Rx.Observable.bindNodeCallback(jsonfile.writeFile)('./data/not_indexed_2.json', res, {spaces: 2}))
 .subscribe(console.log, console.log)

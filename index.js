@@ -7,20 +7,26 @@ const gaApi = require('ga-api');
 const rp = require('request-promise');
 const Rx = require('rxjs');
 const jsonfile = require('jsonfile');
+const sitemapper = new (require('sitemapper'));
 
 const gaApiArgs = {
     clientId: process.env.CLIENT_ID,
     email: process.env.EMAIL,
     key: __dirname + process.env.KEY,
     ids: process.env.IDS,
-    startDate: "2018-02-11",
+    startDate: "2012-01-01",
+    // startDate: "2018-02-01",
     endDate: "2018-02-12",
     dimensions: "ga:pagePath, ga:date",
     metrics: "ga:pageviews",
     filters: "ga:medium==organic"
 };
 
-const transform = (stats) => stats.rows.reduce((a, c) => a.concat({ page: c[0], date: c[1], views: parseInt(c[2]) }), []).filter(x => x.views);
+const transform = (stats) => {
+    return stats.rows.reduce((a, c) => a.concat({ page: c[0], date: c[1], views: parseInt(c[2]) }), [])
+    .filter(x => x.views && x.page !== '/');
+}
+
 
 const getUniquePages = (rows) =>
 Array.from(new Set(rows.map(x => x.page)))
@@ -33,70 +39,40 @@ Array.from(new Set(rows.map(x => x.page)))
     }))
 }))
 
-const compareRowsToSitemap = (sitemap, stats) => stats.filter(item => sitemap.indexOf(item.page) === -1);
+const parseString = string => string.replace(/\/$/, '').split('/').pop();
 
-const RxGaApi = (args) => Rx.Observable.bindNodeCallback(gaApi)(args).flatMap(transform);
+const compareRowsToSitemap = (sitemap, stats) => {
+    return sitemap.filter(url => ! stats.filter(stat => parseString(stat.page).includes(parseString(url))).length)
+}
 
-// const RxGetOrganicAnalytics = RxGaApi(gaApiArgs)
+const RxGaApi = Rx.Observable.bindNodeCallback(gaApi);
+
+// // GET ANALYTICS
+// RxGaApi(gaApiArgs)
 // .expand(x => 
-//     x.query && x.query['start-index'] ?
+//     x.rows ?
 //     RxGaApi(Object.assign({}, {startIndex: x.query['start-index'] + 1000}, gaApiArgs)) :
 //     Rx.Observable.empty()
 // )
+// .filter(x => x && x.rows)
+// .flatMap(transform)
 // .toArray()
 // .flatMap(getUniquePages)
 // .toArray()
-// .flatMap(res => Rx.Observable.bindNodeCallback(jsonfile.writeFile)('./res.json', res, {spaces: 2}));
+// .flatMap(res => Rx.Observable.bindNodeCallback(jsonfile.writeFile)('./data/analytics.json', res, {spaces: 2}))
+// .subscribe(console.log, console.log)
 
 
-Rx.Observable.defer(() => rp('https://kingdomgame.it/post-sitemap1.xml'))
-.flatMap(sitemap => Rx.Observable.bindNodeCallback(xml2js.parseString)(sitemap))
-.map(sitemap => sitemap.urlset.url.map(x => x.loc[0].replace(/https?:[\/]{2}\S*?\/(\S*)/, '/$1')))
-.flatMap(sitemap => Rx.Observable.bindNodeCallback(jsonfile.readFile)('./res.json'), (sitemap, stats) => compareRowsToSitemap(sitemap, stats))
+// // GET SITEMAPS
+// Rx.Observable.defer(() => sitemapper.fetch('https://kingdomgame.it/sitemap_index.xml'))
+// .map(res => res.sites.map(page => page.replace(/https?:[\/]{2}\S*?\/(\S*)/, '/$1')))
+// .flatMap(res => Rx.Observable.bindNodeCallback(jsonfile.writeFile)('./data/sitemap.json', res, {spaces: 2}))
+// .subscribe(console.log, console.log)
+
+
+// // GET NOT INDEXED PAGES
+Rx.Observable.bindNodeCallback(jsonfile.readFile)('./data/sitemap.json')
+.flatMap(sitemap => Rx.Observable.bindNodeCallback(jsonfile.readFile)('./data/analytics.json'), (sitemap, stats) => compareRowsToSitemap(sitemap, stats))
+.toArray()
+.flatMap(res => Rx.Observable.bindNodeCallback(jsonfile.writeFile)('./data/not_indexed.json', res, {spaces: 2}))
 .subscribe(console.log, console.log)
-
-
-
-
-
-
-
-
-
-
-
-    
-    // .then(xml => {
-    //     xml2js.parseString(xml, (err, body) => {
-    //         const siteMapUrls = body.urlset.url.map(x => x.loc[0].replace(/https?:[\/]{2}\S*?\/(\S*)/, '/$1'));
-    //         gaApi({
-    //             clientId: "618951284522-t7mpephtjlakto0uu7nh63pha8lcih7a.apps.googleusercontent.com",
-    //             email: "prova-395@api-project-618951284522.iam.gserviceaccount.com",
-    //             key: __dirname + "/key.pem",
-    //             ids: "ga:66684775",
-    //             startDate: "2017-11-01",
-    //             endDate: "2018-02-12",
-    //             dimensions: "ga:pagePath, ga:date",
-    //             metrics: "ga:pageviews"
-                
-    //           }, (e, stats) => {
-    //             const rows = stats.rows.reduce((a, c) => {
-    //                 return a.concat({ page: c[0], date: c[1], views: parseInt(c[2]) });
-    //             }, []).filter(x => x.views);
-    //             const unique = Array.from(new Set(rows.map(x => x.page)))
-    //             .map(page => rows.filter(x => x.page === page))
-    //             .map(x => ({
-    //                 page: x[0].page,
-    //                 hits: x.map(v => ({
-    //                     date: v.date,
-    //                     views: v.views
-    //                 }))
-    //             }));
-    //             const arr = unique.filter(item => siteMapUrls.indexOf(item.page) === -1);
-    //             console.log(unique);
-    //             console.log(arr.length);
-    //           });
-    //     })   
-    // })
-    // .catch(err => {
-    // });

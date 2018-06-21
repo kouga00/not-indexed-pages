@@ -25,15 +25,15 @@ For more details, visit [fsjohnny's guide](https://medium.com/@fsjohnny/using-go
 
 Then, set all required data in `.env.example`:
 
-* CLIENT_ID: your clientId of your Google APIs service account
-* EMAIL: your email registered of your Google APIs service account
-* KEY: path of your `.pem` key
-* IDS: your Analytics ID
-* START_DATE: start date to analyze
-* END_DATE: end date to analyze
-* SITEMAP_LINK: link of your sitemap
-* FOLDER_DATA: path to save JSON data
-* FOLDER_CSV: path to save CSV data
+* **CLIENT_ID**: your clientId of your Google APIs service account
+* **EMAIL**: your email registered of your Google APIs service account
+* **KEY**: path of your `.pem` key
+* **IDS**: your Analytics ID
+* **START_DATE**: start date to analyze
+* **END_DATE**: end date to analyze
+* **SITEMAP_LINK**: link of your sitemap
+* **FOLDER_DATA**: path to save JSON data
+* **FOLDER_CSV**: path to save CSV data
 
 Then, transform `.env.example` to `.env` with:
 

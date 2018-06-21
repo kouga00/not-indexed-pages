@@ -1,6 +1,45 @@
 'use strict';
 
+require('dotenv').config({ silent: true });
+
+const Rx = require('rxjs');
+const gaApi = require('ga-api');
+const jsonfile = require('jsonfile');
+
 module.exports = class Utilities {
+
+    static getAnalytics() {
+
+
+        const gaApiArgs = {
+            clientId: process.env.CLIENT_ID,
+            email: process.env.EMAIL,
+            key: process.env.PWD + process.env.KEY,
+            ids: process.env.IDS,
+            startDate: process.env.START_DATE,
+            endDate: process.env.END_DATE,
+            dimensions: process.env.DIMENSION,
+            metrics: process.env.METRICS,
+            filters: process.env.FILTERS
+        };
+    
+        const RxGaApi = Rx.Observable.bindNodeCallback(gaApi);
+    
+        //GET ANALYTICS
+        return RxGaApi(gaApiArgs)
+        .expand(x => 
+            x.rows ?
+            RxGaApi(Object.assign({}, {startIndex: x.query['start-index'] + 1000}, gaApiArgs)) :
+            Rx.Observable.empty()
+        )
+        .filter(x => x && x.rows)
+        .flatMap(Utilities.transform)
+        .toArray()
+        .flatMap(Utilities.getUniquePages)
+        .toArray()
+        .flatMap(res => Rx.Observable.bindNodeCallback(jsonfile.writeFile)(process.env.PWD + process.env.FOLDER_DATA + '/analytics.json', res, {spaces: 2}))
+        .flatMap(() => Rx.Observable.bindNodeCallback(jsonfile.readFile)(process.env.PWD + process.env.FOLDER_DATA + '/analytics.json', { encoding: 'utf8' }))
+    }
 
     static transform(stats) {
         return stats.rows

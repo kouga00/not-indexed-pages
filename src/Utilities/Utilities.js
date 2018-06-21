@@ -10,7 +10,6 @@ module.exports = class Utilities {
 
     static getAnalytics() {
 
-
         const gaApiArgs = {
             clientId: process.env.CLIENT_ID,
             email: process.env.EMAIL,

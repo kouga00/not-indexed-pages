@@ -10,11 +10,18 @@
 
 ## Before run
 
-Create your private key ready from your Google APIs service account and convert it in a public `.pem` key with this command:
+Go to [Google’s Developers Console site](https://console.developers.google.com/) and create a new project.
+Click on **Credentials** under the **APIs & Auth** section, and then on the **Create new Client ID** button. 
+Under **Application Type** select **Service account** and click on the **Create Client ID** button. 
+After a few seconds your newly created private key will be downloaded to your computer and a popup message telling you that the secret password to your file is, well, notasecret will be shown. Remember this password as we will need it later. 
+
+Now, convert your private key in a public `.pem` key with this command:
 
 ```
 $ openssl pkcs12 -in key.p12 -nodes -nocerts > key.pem
 ```
+
+For more details, visit [fsjohnny's guide](https://medium.com/@fsjohnny/using-google-analytics-api-with-node-js-eb1f5af3375a).
 
 Then, set all required data in `.env.example`:
 

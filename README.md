@@ -2,7 +2,7 @@
 
 ## Description
 
- This package compare your site's sitemap with your Google Analytics account to get all pages not indexed during a range of dates and return JSON and CSV files with:
+ This package compare your sitemap with your Google Analytics account to get all pages not indexed during a range of dates and returns JSON and CSV files with:
 
  * Not Indexed: site pages that not indexed in Google SERP
  * Not Performed: site pages that performed worse than a calculate media

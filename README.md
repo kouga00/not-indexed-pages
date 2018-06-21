@@ -27,7 +27,7 @@ Then, set all required data in `.env.example`:
 
 * CLIENT_ID: your clientId of your Google APIs service account
 * EMAIL: your email registered of your Google APIs service account
-* KEY= path of your `.pem` key
+* KEY: path of your `.pem` key
 * IDS: your Analytics ID
 * START_DATE: start date to analyze
 * END_DATE: end date to analyze
